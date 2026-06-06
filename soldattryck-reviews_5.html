@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trustpilot Widget Manager — Soldattryck.se</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:#f5f5f5;color:#111;min-height:100vh}
+
+/* ── LOGIN SCREEN ── */
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px}
+.login-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:40px 48px;text-align:center;max-width:380px;width:90%}
+.login-logo{background:#00b67a;border-radius:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.login-logo svg{width:26px;height:26px}
+.login-title{font-size:18px;font-weight:700;color:#111;margin-bottom:6px}
+.login-sub{font-size:13px;color:#888;margin-bottom:24px;line-height:1.5}
+.login-btn{width:100%;padding:10px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;color:#111;transition:background .15s;font-family:inherit}
+.login-btn:hover{background:#f9fafb}
+.login-btn svg{width:18px;height:18px}
+.login-note{font-size:11px;color:#bbb;margin-top:12px}
+
+/* ── TOPBAR ── */
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.tbl{display:flex;align-items:center;gap:10px}
+.tp-dot{background:#00b67a;border-radius:6px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tp-dot svg{width:18px;height:18px}
+.tb-title{font-size:15px;font-weight:700;color:#111}
+.tb-sub{font-size:12px;color:#888}
+.tb-right{display:flex;align-items:center;gap:12px}
+.user-info{display:flex;align-items:center;gap:8px;font-size:12px;color:#555}
+.user-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb}
+.logout-btn{font-size:12px;padding:4px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;cursor:pointer;color:#888;transition:background .1s}
+.logout-btn:hover{background:#f5f5f5}
+
+/* ── SYNC STATUS ── */
+.sync-bar{background:#f0fdf8;border-bottom:1px solid #bbf7d0;padding:8px 24px;font-size:12px;color:#166534;display:flex;align-items:center;gap:8px}
+.sync-bar.error{background:#fff5f5;border-color:#fca5a5;color:#991b1b}
+.sync-bar.saving{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0}
+.sync-dot.saving{background:#f59e0b}
+.sync-dot.error{background:#dc2626}
+
+/* ── MAIN ── */
+.main{display:grid;grid-template-columns:1fr 360px;min-height:calc(100vh - 57px)}
+.lpane{padding:24px;border-right:1px solid #e5e7eb;overflow-y:auto;max-height:calc(100vh - 90px)}
+.rpane{padding:24px;background:#fff;overflow-y:auto;max-height:calc(100vh - 90px)}
+.slabel{font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.stat3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+.scard{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px}
+.sval{font-size:22px;font-weight:700;color:#111}
+.slbl2{font-size:11px;color:#888;margin-top:2px}
+.tp-stars-sm{display:flex;gap:2px;margin-top:4px}
+.tps{width:14px;height:14px;background:#00b67a}
+.tps.e{background:#dcdce6}
+.rlist{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.ritem{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 13px;transition:border-color .15s}
+.ritem:hover{border-color:#00b67a}
+.ritem.sel{border-color:#00b67a;background:#f0fdf8}
+.ritop{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.ristars{display:flex;gap:2px}
+.ristar{width:11px;height:11px;background:#00b67a}
+.ristar.e{background:#dcdce6}
+.riname{font-size:11px;color:#888}
+.rititle{font-size:13px;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.racts{display:flex;gap:5px;margin-top:6px}
+.bsm{font-size:11px;padding:3px 9px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;cursor:pointer;color:#555;transition:background .1s;font-family:inherit}
+.bsm:hover{background:#f5f5f5}
+.bsm.del:hover{color:#dc2626;border-color:#fca5a5;background:#fff5f5}
+.addbtn{width:100%;font-size:13px;padding:9px;border:1px dashed #d1d5db;border-radius:8px;background:#fff;cursor:pointer;color:#888;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .1s;font-family:inherit}
+.addbtn:hover{background:#f9fafb}
+.flabel{font-size:12px;color:#555;display:block;margin-bottom:4px;font-weight:500}
+.fgroup{margin-bottom:12px}
+.finput{width:100%;font-size:13px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;color:#111;transition:border-color .15s;font-family:inherit}
+.finput:focus{outline:none;border-color:#00b67a;box-shadow:0 0 0 3px rgba(0,182,122,.1)}
+textarea.finput{resize:vertical;min-height:72px;line-height:1.5}
+.spick{display:flex;gap:4px}
+.sp{width:26px;height:26px;border-radius:3px;background:#dcdce6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.sp.on{background:#00b67a}
+.sp svg{width:14px;height:14px}
+.savebtn{width:100%;padding:10px;background:#00b67a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;margin-top:4px;font-family:inherit}
+.savebtn:hover{background:#009e69}
+.gensec{margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb}
+.urlinput{width:100%;font-size:12px;padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;color:#111;margin-bottom:12px;font-family:inherit;transition:border-color .15s}
+.urlinput:focus{outline:none;border-color:#00b67a}
+.genbtn{width:100%;padding:10px;background:#111;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;font-family:inherit}
+.genbtn:hover{background:#333}
+.codebox{background:#1e1e2e;border-radius:8px;padding:12px;font-size:10.5px;font-family:'Courier New',monospace;color:#cdd6f4;white-space:pre-wrap;overflow-x:auto;max-height:220px;overflow-y:auto;margin-top:10px;line-height:1.5;word-break:break-all}
+.copybtn{width:100%;padding:9px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#111;font-size:13px;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;font-family:inherit}
+.copybtn:hover{background:#f5f5f5}
+.copybtn.ok{border-color:#00b67a;color:#00b67a;background:#f0fdf8}
+.empty{text-align:center;padding:2rem 1rem;color:#bbb;font-size:13px;line-height:1.8}
+.preview-note{font-size:11px;color:#aaa;margin-top:8px;text-align:center;line-height:1.5}
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.setting-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:10px 12px}
+.setting-label{font-size:11px;color:#888;margin-bottom:4px}
+.setting-input{width:100%;font-size:13px;font-weight:600;border:none;background:transparent;color:#111;font-family:inherit}
+.setting-input:focus{outline:none}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 40 40" fill="none"><path d="M20 4l2.35 7.24H30L23.82 15.5l2.35 7.24L20 18.48l-6.17 4.26 2.35-7.24L10 11.24h7.65L20 4z" fill="white"/></svg>
+    </div>
+    <div class="login-title">Trustpilot Widget Manager</div>
+    <div class="login-sub">Logga in med ditt Google-konto för att hantera recensioner. Dina ändringar sparas automatiskt i Google Drive.</div>
+    <button class="login-btn" onclick="signIn()">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Logga in med Google
+    </button>
+    <div class="login-note">Recensionerna sparas i en fil på ditt Google Drive</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="hidden">
+  <div class="topbar">
+    <div class="tbl">
+      <div class="tp-dot">
+        <svg viewBox="0 0 40 40" fill="none"><path d="M20 4l2.35 7.24H30L23.82 15.5l2.35 7.24L20 18.48l-6.17 4.26 2.35-7.24L10 11.24h7.65L20 4z" fill="white"/></svg>
+      </div>
+      <div>
+        <div class="tb-title">Trustpilot Widget Manager</div>
+        <div class="tb-sub">Soldattryck.se</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="user-info">
+        <img class="user-avatar" id="user-avatar" src="" alt=""/>
+        <span id="user-name"></span>
+      </div>
+      <button class="logout-btn" onclick="signOut()">Logga ut</button>
+    </div>
+  </div>
+
+  <div class="sync-bar" id="sync-bar">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Laddar recensioner från Drive...</span>
+  </div>
+
+  <div class="main">
+    <div class="lpane">
+      <div class="stat3" id="stat3"></div>
+      <div class="slabel">Recensioner</div>
+      <div class="rlist" id="rlist"></div>
+      <button class="addbtn" onclick="addR()">+ Lägg till recension</button>
+    </div>
+    <div class="rpane">
+      <div class="slabel">Redigera recension</div>
+      <div id="epanel">
+        <div class="empty">← Välj en recension till vänster</div>
+      </div>
+      <div class="gensec">
+        <div class="slabel">Inställningar</div>
+        <div class="settings-row">
+          <div class="setting-card">
+            <div class="setting-label">Sekunder per sida</div>
+            <input class="setting-input" id="cfg-autoplay" type="number" value="5" min="2" max="30">
+          </div>
+          <div class="setting-card">
+            <div class="setting-label">Kort per sida (desktop)</div>
+            <input class="setting-input" id="cfg-perpage" type="number" value="3" min="1" max="4">
+          </div>
+        </div>
+        <div class="slabel" style="margin-top:4px">Trustpilot-URL</div>
+        <input class="urlinput" id="tpurl" value="https://www.trustpilot.com/review/soldattryck.se"/>
+        <button class="genbtn" onclick="genCode()">⚙ Generera Shopify-kod</button>
+        <div id="codeout" style="display:none">
+          <div class="codebox" id="codebox"></div>
+          <button class="copybtn" id="copybtn" onclick="doCopy()">Kopiera kod</button>
+          <div class="preview-note">Klistra in i en "Custom Liquid"-sektion i Shopify Theme Editor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var CLIENT_ID = '551909707371-01mu2tmrktejn7kmnljr9me8nh1v2aaj.apps.googleusercontent.com';
+var SCOPES     = 'https://www.googleapis.com/auth/drive.file';
+var FILE_NAME  = 'soldattryck-reviews.json';
+var fileId     = null;
+var accessToken= null;
+var reviews    = [];
+var nid        = 1;
+var aid        = null;
+var pstars     = 5;
+var saveTimer  = null;
+
+/* ── DEFAULT REVIEWS ── */
+var DEFAULT_REVIEWS = [
+  {id:1,stars:5,title:"Fantastisk kvalitet och snabb leverans",body:"Beställde tröjor till hela laget och blev imponerade av både kvaliteten och hur snabbt det gick. Trycket sitter perfekt och färgerna är exakta.",author:"Johan S.",date:"2 dagar sedan"},
+  {id:2,stars:5,title:"Professionellt bemötande från start",body:"Isak hjälpte oss med designen och var otroligt lyhörd för våra önskemål. Slutresultatet överträffade förväntningarna.",author:"Maria L.",date:"1 vecka sedan"},
+  {id:3,stars:5,title:"Rekommenderar varmt!",body:"Tredje gången vi beställer och det håller alltid hög nivå. Prisvärda profilkläder med bra kommunikation längs vägen.",author:"Erik B.",date:"2 veckor sedan"},
+  {id:4,stars:4,title:"Nöjd med resultatet",body:"Lite längre leveranstid än väntat men kvaliteten på trycket var riktigt bra. Kommer definitivt beställa igen.",author:"Anna K.",date:"3 veckor sedan"},
+  {id:5,stars:5,title:"Bästa leverantören vi haft",body:"Enkelt att beställa, tydlig prissättning och ett slutresultat som imponerade på hela styrelsen. Topp!",author:"Peter H.",date:"1 månad sedan"},
+  {id:6,stars:5,title:"Smidigt och proffsigt",body:"Designverktyget på hemsidan var intuitivt och det gick fort att få en proof. Trycket är skarpt och hållbart.",author:"Sara W.",date:"1 månad sedan"},
+  {id:7,stars:5,title:"Imponerande service",body:"Vi fick hjälp hela vägen från design till leverans. Personalen är kunnig och svarar snabbt på frågor.",author:"Tobias M.",date:"6 veckor sedan"},
+  {id:8,stars:4,title:"Bra kvalitet på trycket",body:"Trycket håller och ser proffsigt ut. Frakt tog lite längre än väntat men resultatet var värt väntan.",author:"Linda P.",date:"2 månader sedan"},
+  {id:9,stars:5,title:"Perfekt för företagsprofil",body:"Beställde jackor med logotyp till hela teamet. Alla är supernöjda, kvaliteten är klart bättre än förväntat.",author:"Mikael E.",date:"2 månader sedan"}
+];
+
+/* ── GOOGLE SIGN IN ── */
+function signIn() {
+  var client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: function(resp) {
+      if (resp.error) { setSyncError('Inloggning misslyckades: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      onSignedIn();
+    }
+  });
+  client.requestAccessToken();
+}
+
+function signOut() {
+  google.accounts.oauth2.revoke(accessToken, function(){});
+  accessToken = null; fileId = null; reviews = [];
+  document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+function onSignedIn() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
+  // fetch user info
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  }).then(function(r){ return r.json(); }).then(function(u){
+    document.getElementById('user-name').textContent   = u.name || u.email;
+    document.getElementById('user-avatar').src         = u.picture || '';
+  });
+  setSyncSaving('Söker efter befintlig fil i Drive...');
+  findOrCreateFile();
+}
+
+/* ── DRIVE FILE MANAGEMENT ── */
+function findOrCreateFile() {
+  fetch("https://www.googleapis.com/drive/v3/files?q=name%3D%27" + FILE_NAME + "%27+and+trashed%3Dfalse&fields=files(id,name)", {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.files && data.files.length > 0) {
+      fileId = data.files[0].id;
+      loadFromDrive();
+    } else {
+      // no file yet — use defaults and create
+      reviews = JSON.parse(JSON.stringify(DEFAULT_REVIEWS));
+      nid = 10;
+      renderAll();
+      setSyncOk('Ny fil skapad i Drive');
+      saveToDrive();
+    }
+  })
+  .catch(function(){ setSyncError('Kunde inte ansluta till Drive'); });
+}
+
+function loadFromDrive() {
+  setSyncSaving('Laddar recensioner...');
+  fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media', {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    reviews = data.reviews || DEFAULT_REVIEWS;
+    nid = data.nid || (reviews.length + 1);
+    renderAll();
+    setSyncOk('Synkad med Drive · Senast uppdaterad just nu');
+  })
+  .catch(function(){ setSyncError('Kunde inte läsa filen från Drive'); });
+}
+
+function saveToDrive() {
+  if (!accessToken) return;
+  setSyncSaving('Sparar...');
+  var payload = JSON.stringify({ reviews: reviews, nid: nid });
+  var method, url;
+  if (fileId) {
+    method = 'PATCH';
+    url    = 'https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media';
+  } else {
+    method = 'POST';
+    url    = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  }
+
+  if (!fileId) {
+    // Multipart create with metadata
+    var boundary = '-------soldattryck';
+    var delimiter = '--' + boundary + '\r\n';
+    var closeDelim = '--' + boundary + '--';
+    var multipartBody =
+      delimiter + 'Content-Type: application/json\r\n\r\n' +
+      JSON.stringify({ name: FILE_NAME, mimeType: 'application/json' }) + '\r\n' +
+      delimiter + 'Content-Type: application/json\r\n\r\n' +
+      payload + '\r\n' + closeDelim;
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'multipart/related; boundary=' + boundary
+      },
+      body: multipartBody
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(f){
+      fileId = f.id;
+      setSyncOk('Sparad i Drive ✓');
+    })
+    .catch(function(){ setSyncError('Kunde inte spara till Drive'); });
+  } else {
+    fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Authorization: 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: payload
+    })
+    .then(function(){ setSyncOk('Sparad i Drive ✓ · ' + new Date().toLocaleTimeString('sv-SE')); })
+    .catch(function(){ setSyncError('Kunde inte spara till Drive'); });
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToDrive, 1500);
+}
+
+/* ── SYNC BAR ── */
+function setSyncOk(msg) {
+  var bar = document.getElementById('sync-bar');
+  bar.className = 'sync-bar';
+  document.getElementById('sync-dot').className = 'sync-dot';
+  document.getElementById('sync-text').textContent = msg;
+}
+function setSyncSaving(msg) {
+  var bar = document.getElementById('sync-bar');
+  bar.className = 'sync-bar saving';
+  document.getElementById('sync-dot').className = 'sync-dot saving';
+  document.getElementById('sync-text').textContent = msg;
+}
+function setSyncError(msg) {
+  var bar = document.getElementById('sync-bar');
+  bar.className = 'sync-bar error';
+  document.getElementById('sync-dot').className = 'sync-dot error';
+  document.getElementById('sync-text').textContent = msg;
+}
+
+/* ── HELPERS ── */
+function avg(){ return reviews.length ? +(reviews.reduce(function(s,r){return s+r.stars;},0)/reviews.length).toFixed(1) : 0; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function shtml(n){ var h=''; for(var i=1;i<=5;i++) h+='<div class="ristar'+(i>n?' e':'')+'"></div>'; return h; }
+
+/* ── RENDER ── */
+function renderStats() {
+  var a = avg();
+  var stars = '';
+  for (var i=1;i<=5;i++) stars += '<div class="tps'+(i>Math.round(a)?' e':'')+'"></div>';
+  document.getElementById('stat3').innerHTML =
+    '<div class="scard"><div class="sval">'+a+'</div><div class="tp-stars-sm">'+stars+'</div><div class="slbl2">Snittbetyg</div></div>'+
+    '<div class="scard"><div class="sval">'+reviews.length+'</div><div class="slbl2">Recensioner</div></div>'+
+    '<div class="scard"><div class="sval">'+(reviews.filter(function(r){return r.stars===5;}).length)+'</div><div class="slbl2">5-stjärniga</div></div>';
+}
+
+function renderList() {
+  var el = document.getElementById('rlist');
+  el.innerHTML = '';
+  reviews.forEach(function(r) {
+    var d = document.createElement('div');
+    d.className = 'ritem'+(aid===r.id?' sel':'');
+    d.innerHTML =
+      '<div class="ritop"><div class="ristars">'+shtml(r.stars)+'</div><span class="riname">'+esc(r.author)+'</span></div>'+
+      '<div class="rititle">'+esc(r.title)+'</div>'+
+      '<div class="racts">'+
+        '<button class="bsm" onclick="editR('+r.id+')">Redigera</button>'+
+        '<button class="bsm del" onclick="delR('+r.id+')">Ta bort</button>'+
+      '</div>';
+    el.appendChild(d);
+  });
+}
+
+function renderAll() { renderStats(); renderList(); }
+
+function editR(id) {
+  aid = id;
+  var r = reviews.filter(function(x){return x.id===id;})[0];
+  pstars = r ? r.stars : 5;
+  renderList();
+  if (!r) return;
+  document.getElementById('epanel').innerHTML =
+    '<div class="fgroup"><label class="flabel">Betyg</label>'+
+    '<div class="spick" id="spick">'+
+    [1,2,3,4,5].map(function(n){
+      return '<button class="sp'+(n<=pstars?' on':'')+'" onclick="pstar('+n+')">'+
+        '<svg viewBox="0 0 40 40" fill="none"><path d="M20 4l2.35 7.24H30L23.82 15.5l2.35 7.24L20 18.48l-6.17 4.26 2.35-7.24L10 11.24h7.65L20 4z" fill="white"/></svg>'+
+        '</button>';
+    }).join('')+
+    '</div></div>'+
+    '<div class="fgroup"><label class="flabel">Rubrik</label><input class="finput" id="ft" value="'+esc(r.title)+'"/></div>'+
+    '<div class="fgroup"><label class="flabel">Recensionstext</label><textarea class="finput" id="fb">'+esc(r.body)+'</textarea></div>'+
+    '<div class="fgroup"><label class="flabel">Namn</label><input class="finput" id="fa" value="'+esc(r.author)+'"/></div>'+
+    '<div class="fgroup"><label class="flabel">Datum (fritext)</label><input class="finput" id="fd" value="'+esc(r.date)+'"/></div>'+
+    '<button class="savebtn" onclick="saveR('+id+')">✓ Spara ändringar</button>';
+}
+
+function pstar(n) {
+  pstars = n;
+  document.querySelectorAll('.sp').forEach(function(b,i){b.classList.toggle('on',i<n);});
+}
+
+function saveR(id) {
+  var r = reviews.filter(function(x){return x.id===id;})[0];
+  if (!r) return;
+  r.stars  = pstars;
+  r.title  = document.getElementById('ft').value;
+  r.body   = document.getElementById('fb').value;
+  r.author = document.getElementById('fa').value;
+  r.date   = document.getElementById('fd').value;
+  renderAll();
+  scheduleSave();
+}
+
+function delR(id) {
+  if (!confirm('Ta bort denna recension?')) return;
+  reviews = reviews.filter(function(x){return x.id!==id;});
+  if (aid===id) {
+    aid = null;
+    document.getElementById('epanel').innerHTML = '<div class="empty">← Välj en recension till vänster</div>';
+  }
+  renderAll();
+  scheduleSave();
+}
+
+function addR() {
+  var r = {id:nid++,stars:5,title:"Ny recension",body:"Skriv recensionstexten här.",author:"Kundens Namn",date:"Idag"};
+  reviews.unshift(r);
+  renderAll();
+  editR(r.id);
+  scheduleSave();
+}
+
+/* ── CODE GENERATION ── */
+function genCode() {
+  var url = document.getElementById('tpurl').value || 'https://www.trustpilot.com';
+  var autoMs = (parseInt(document.getElementById('cfg-autoplay').value)||5)*1000;
+  var perPage = parseInt(document.getElementById('cfg-perpage').value)||3;
+  var a = avg();
+  var rdata = JSON.stringify(reviews.map(function(r){return{s:r.stars,t:r.title,b:r.body,n:r.author,d:r.date};}));
+  var totalRevs = reviews.length;
+  var score = a.toFixed(1).replace('.',',');
+
+  var code = '{% comment %}Trustpilot Carousel Widget — Soldattryck.se{% endcomment %}\n<style>\n#tp-w *{box-sizing:border-box;margin:0;padding:0}\n#tp-w{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#fff;padding:36px 20px 28px;max-width:1100px;margin:0 auto;text-align:center}\n#tp-w .tp-hd{text-align:center;margin-bottom:24px}\n#tp-w .tp-hl{font-size:26px;font-weight:700;color:#191919;letter-spacing:-.4px;margin-bottom:8px}\n#tp-w .tp-meta{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}\n#tp-w .tp-sn{font-size:15px;font-weight:600;color:#191919}\n#tp-w .tp-st{font-size:13px;color:#6b7280}\n#tp-w .tp-stars{display:inline-flex;gap:3px}\n#tp-w .tp-sq{width:36px;height:36px;background:#00b67a;display:flex;align-items:center;justify-content:center}\n#tp-w .tp-sq.e{background:#dcdce6}\n#tp-w .tp-sq svg{width:22px;height:22px}\n#tp-w .tp-pb{height:2px;background:#e5e7eb;border-radius:2px;margin:16px 0 18px;overflow:hidden;max-width:100%}\n#tp-w .tp-pf{height:100%;background:#00b67a;border-radius:2px;width:0%;transition:width linear}\n#tp-w .tp-wrap{overflow:hidden;text-align:left}\n#tp-w .tp-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);align-items:stretch}\n#tp-w .tp-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:16px;flex-shrink:0;display:flex;flex-direction:column;gap:5px;margin:0 5px;transition:box-shadow .2s}\n#tp-w .tp-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}\n#tp-w .tp-ctop{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}\n#tp-w .tp-cs{display:inline-flex;gap:2px}\n#tp-w .tp-cstar{width:24px;height:24px;background:#00b67a;display:flex;align-items:center;justify-content:center}\n#tp-w .tp-cstar.e{background:#dcdce6}\n#tp-w .tp-cstar svg{width:15px;height:15px}\n#tp-w .tp-cdate{font-size:12px;color:#9ca3af}\n#tp-w .tp-cauthor{font-size:13px;font-weight:600;color:#191919}\n#tp-w .tp-ctitle{font-size:14px;font-weight:700;color:#191919;line-height:1.3}\n#tp-w .tp-cbody{font-size:13px;color:#374151;line-height:1.55;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}\n#tp-w .tp-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:20px}\n#tp-w .tp-nb{width:36px;height:36px;border:1.5px solid #e5e7eb;border-radius:50%;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s;flex-shrink:0}\n#tp-w .tp-nb:hover{border-color:#191919}\n#tp-w .tp-nb svg{width:16px;height:16px;stroke:#191919;fill:none;stroke-width:2}\n#tp-w .tp-dots{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}\n#tp-w .tp-d{width:8px;height:8px;border-radius:50%;background:#e5e7eb;cursor:pointer;transition:background .2s,transform .2s}\n#tp-w .tp-d.on{background:#191919;transform:scale(1.2)}\n#tp-w .tp-ft{text-align:center;margin-top:20px;padding-top:18px;border-top:1px solid #e5e7eb}\n#tp-w .tp-fl{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:#6b7280;font-size:13px;font-weight:500;transition:color .15s}\n#tp-w .tp-fl:hover{color:#191919}\n#tp-w .tp-logo{display:inline-flex;align-items:center;gap:5px}\n#tp-w .tp-logo-star svg{width:20px;height:20px}\n#tp-w .tp-logo-txt{font-size:14px;font-weight:700;color:#191919}\n</style>\n<div id="tp-w">\n  <div class="tp-hd"><div class="tp-hl">Utmärkt</div><div class="tp-meta"><div class="tp-stars" id="tphs"></div><span class="tp-sn">'+a+'</span><span class="tp-st">Betyg '+score+' av 5 baserat på '+totalRevs+' recensioner</span></div></div>\n  <div class="tp-pb"><div class="tp-pf" id="tppf"></div></div>\n  <div class="tp-wrap"><div class="tp-track" id="tptr"></div></div>\n  <div class="tp-nav"><button class="tp-nb" id="tpprev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><div class="tp-dots" id="tpds"></div><button class="tp-nb" id="tpnext"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button></div>\n  <div class="tp-ft"><a class="tp-fl" href="'+url+'" target="_blank" rel="noopener">Läs alla recensioner på<span class="tp-logo"><span class="tp-logo-star"><svg viewBox="0 0 40 40" fill="none"><path d="M20 4l2.35 7.24H30L23.82 15.5l2.35 7.24L20 18.48l-6.17 4.26 2.35-7.24L10 11.24h7.65L20 4z" fill="#00b67a"/></svg></span><span class="tp-logo-txt">Trustpilot</span></span></a></div>\n</div>\n<script>(function(){\nvar rv='+rdata+';\nvar AUTOPLAY='+autoMs+';\nvar PD='+perPage+',PT=2,PM=1;\nvar cur=0,timer,w=document.getElementById("tp-w");\nfunction svgS(){return \'<svg viewBox="0 0 40 40" fill="none"><path d="M20 4l2.35 7.24H30L23.82 15.5l2.35 7.24L20 18.48l-6.17 4.26 2.35-7.24L10 11.24h7.65L20 4z" fill="white"/></svg>\';}\nfunction hs(n){var h="";for(var i=1;i<=5;i++)h+=\'<div class="tp-sq\'+(i>n?\' e\':\'\')+\'">\'+svgS()+\'</div>\';return h;}\nfunction cs(n){var h="";for(var i=1;i<=5;i++)h+=\'<div class="tp-cstar\'+(i>n?\' e\':\'\')+\'">\'+svgS()+\'</div>\';return h;}\ndocument.getElementById("tphs").innerHTML=hs(Math.round('+a+'));\nfunction pp(){var ww=window.innerWidth;return ww>=900?PD:ww>=560?PT:PM;}\nfunction cw(){var wrap=w.querySelector(".tp-wrap");return Math.floor(wrap.offsetWidth/pp())-10;}\nfunction build(){var tr=document.getElementById("tptr");tr.innerHTML="";rv.forEach(function(r){var c=document.createElement("div");c.className="tp-card";c.style.width=cw()+"px";c.innerHTML=\'<div class="tp-ctop"><div class="tp-cs">\'+cs(r.s)+\'</div><span class="tp-cdate">\'+r.d+\'</span></div><div class="tp-cauthor">av \'+r.n+\'</div><div class="tp-ctitle">\'+r.t+\'</div><div class="tp-cbody">\'+r.b+\'</div>\';tr.appendChild(c);});}\nfunction pages(){return Math.ceil(rv.length/pp());}\nfunction buildDots(){var ds=document.getElementById("tpds");ds.innerHTML="";for(var i=0;i<pages();i++){var d=document.createElement("div");d.className="tp-d"+(i===cur?" on":"");d.setAttribute("data-i",i);d.onclick=function(){go(+this.getAttribute("data-i"));};ds.appendChild(d);}}\nfunction go(p){cur=(p+pages())%pages();var off=cur*pp()*(cw()+10);document.getElementById("tptr").style.transform="translateX(-"+off+"px)";document.querySelectorAll(".tp-d").forEach(function(d,i){d.classList.toggle("on",i===cur);});prog();}\nfunction prog(){var pf=document.getElementById("tppf");pf.style.transition="none";pf.style.width="0%";setTimeout(function(){pf.style.transition="width "+AUTOPLAY+"ms linear";pf.style.width="100%";},30);}\nfunction startAuto(){clearInterval(timer);timer=setInterval(function(){go(cur+1);},AUTOPLAY);prog();}\nfunction stopAuto(){clearInterval(timer);}\ndocument.getElementById("tpnext").onclick=function(){stopAuto();go(cur+1);startAuto();};\ndocument.getElementById("tpprev").onclick=function(){stopAuto();go(cur-1);startAuto();};\nw.querySelector(".tp-wrap").addEventListener("mouseenter",stopAuto);\nw.querySelector(".tp-wrap").addEventListener("mouseleave",startAuto);\nvar rz;window.addEventListener("resize",function(){clearTimeout(rz);rz=setTimeout(function(){stopAuto();build();buildDots();go(0);startAuto();},200);});\nbuild();buildDots();go(0);startAuto();\n})();<\/script>';
+
+  document.getElementById('codebox').textContent = code;
+  document.getElementById('codeout').style.display = 'block';
+  var cb = document.getElementById('copybtn');
+  cb.className = 'copybtn'; cb.textContent = 'Kopiera kod';
+}
+
+function doCopy() {
+  var code = document.getElementById('codebox').textContent;
+  navigator.clipboard.writeText(code).then(function() {
+    var cb = document.getElementById('copybtn');
+    cb.className = 'copybtn ok'; cb.textContent = '✓ Kopierat!';
+    setTimeout(function(){ cb.className='copybtn'; cb.textContent='Kopiera kod'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
